@@ -1,0 +1,52 @@
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.conda/
+*.egg-info/
+.eggs/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs & temp files
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Build / distribution folders
+build/
+dist/
+*.spec
+
+# Checkpoint files
+.ipynb_checkpoints/
+
+# HWP or data files
+*.hwp
+checklist.json
+
+# Local state files
+*.db
+*.sqlite3
+
+# OS generated files
+Desktop.ini
+
+# Executables
+*.exe
+*.dll
+
+# User uploads / test files
+uploads/
