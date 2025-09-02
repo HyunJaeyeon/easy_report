@@ -51,19 +51,19 @@
 ## 🎯 Phase 3: Sidebar Implementation
 
 ### 3.1 Dynamic Sidebar Generation
-- [ ] Render `title1` items as buttons  
-- [ ] Display company name + "3차 보고서" at the top  
-- [ ] Highlight currently selected `title1`  
+- [x] Render `title1` items as buttons
+- [x] Display company name + "3차 보고서" at the top
+- [x] Highlight currently selected `title1`
 
 ### 3.2 Sidebar Navigation
-- [ ] Handle `title1` button click events  
-- [ ] Context switch logic for main page  
-- [ ] Visual feedback for selection (background, border)  
+- [x] Handle `title1` button click events
+- [x] Context switch logic for main page
+- [x] Visual feedback for selection (background, border)
 
 ### 3.3 Senior-Friendly UI
-- [ ] Enlarge button size (minimum height 60px)  
-- [ ] Increase font size (minimum 14pt)  
-- [ ] Apply high-contrast colors  
+- [x] Enlarge button size (minimum height 60px)
+- [x] Increase font size (minimum 16pt)
+- [x] Apply high-contrast colors  
 
 ---
 

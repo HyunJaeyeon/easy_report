@@ -125,7 +125,7 @@ class MainWindow(ctk.CTk):
         title_label = ctk.CTkLabel(
             self.sidebar_frame,
             text=f"{self.company_name}\n3차 보고서",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            font=ctk.CTkFont(size=18, weight="bold"),
             justify="center"
         )
         title_label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
@@ -167,16 +167,28 @@ class MainWindow(ctk.CTk):
                 self.sidebar_scrollable,
                 text=title1.label,
                 command=lambda idx=i: self.select_title1(idx),
-                font=ctk.CTkFont(size=14),
-                height=50,
+                font=ctk.CTkFont(size=16),
+                height=60,
                 anchor="w",
                 justify="left"
             )
             button.grid(row=i, column=0, padx=10, pady=5, sticky="ew")
 
-            # Highlight current selection
+            # Apply styling based on selection state
             if i == self.current_title1_index:
-                button.configure(fg_color="#3B8ED0")
+                button.configure(
+                    fg_color="#FF6B35",  # High-contrast orange for selected
+                    text_color="white",
+                    border_width=2,
+                    border_color="#CC5525"
+                )
+            else:
+                button.configure(
+                    fg_color="#F0F0F0",  # Light gray for unselected
+                    text_color="#333333",
+                    border_width=1,
+                    border_color="#CCCCCC"
+                )
 
     def update_main_content(self):
         """Update main content area"""
