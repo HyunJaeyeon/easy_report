@@ -10,41 +10,41 @@
 ## 📋 Phase 1: Project Setup and Data Structure Implementation
 
 ### 1.1 Development Environment Setup
-- [ ] Set up Python virtual environment  
-- [ ] Install CustomTkinter and required packages  
-- [ ] Design project folder structure  
-- [ ] Initialize Git  
+- [x] Set up Python virtual environment
+- [x] Install CustomTkinter and required packages
+- [x] Design project folder structure
+- [x] Initialize Git  
 
 ### 1.2 Data Parsing and Structuring
-- [ ] Implement `checklist.json` parser  
-  - [ ] JSON load and validation function  
-  - [ ] Node classification by type (`title1` → `title2` → `section`)  
-  - [ ] Tree builder function for hierarchy  
-- [ ] Design data model classes  
-  - [ ] Base class `ChecklistNode`  
-  - [ ] Subclasses: `Title1`, `Title2`, `Section`  
-- [ ] Basic state management system  
-  - [ ] Mechanism to save/load checkbox states  
-  - [ ] Progress calculation logic  
+- [x] Implement `checklist.json` parser
+  - [x] JSON load and validation function
+  - [x] Node classification by type (`title1` → `title2` → `section`)
+  - [x] Tree builder function for hierarchy
+- [x] Design data model classes
+  - [x] Base class `ChecklistNode`
+  - [x] Subclasses: `Title1`, `Title2`, `Section`
+- [x] Basic state management system
+  - [x] Mechanism to save/load checkbox states
+  - [x] Progress calculation logic  
 
 ---
 
 ## 📱 Phase 2: First Screen and Basic UI Layout
 
 ### 2.1 First Screen (Initialization)
-- [ ] Company name input field (large font)  
-- [ ] HWP file upload feature  
-  - [ ] File selection dialog  
-  - [ ] File validation (hwp extension)  
-  - [ ] Display upload status  
-- [ ] [확인] button → Navigate to checklist screen  
+- [x] Company name input field (large font)
+- [x] HWP file upload feature
+  - [x] File selection dialog
+  - [x] File validation (hwp extension)
+  - [x] Display upload status
+- [x] [확인] button → Navigate to checklist screen  
 
 ### 2.2 Main Window Layout
-- [ ] Define overall window size and minimum size  
-- [ ] Define left sidebar area  
-- [ ] Define right main content area  
-- [ ] Define bottom navigation area  
-- [ ] Implement responsive layout (handle window resizing)  
+- [x] Define overall window size and minimum size
+- [x] Define left sidebar area
+- [x] Define right main content area
+- [x] Define bottom navigation area
+- [x] Implement responsive layout (handle window resizing)  
 
 ---
 
