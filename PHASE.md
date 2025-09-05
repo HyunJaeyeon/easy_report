@@ -70,19 +70,19 @@
 ## 📊 Phase 4: Main Page – Header and Stepper
 
 ### 4.1 Main Page Header
-- [ ] Display current `title1.label` as a large title  
-- [ ] Show progress (steps completed vs total)  
+- [x] Display current `title1.label` as a large title
+- [x] Show progress (steps completed vs total)
 
 ### 4.2 Stepper UI
-- [ ] Display `title2` children of the current `title1` as steps  
-- [ ] Format: Step number + label (e.g., "1. 위험성평가 사전준비")  
-- [ ] Show checkmark (✓) for completed steps  
-- [ ] Highlight current step  
+- [x] Display `title2` children of the current `title1` as steps
+- [x] Format: Step number + label (e.g., "1. 위험성평가 사전준비")
+- [x] Show checkmark (✓) for completed steps
+- [x] Highlight current step
 
 ### 4.3 Stepper Navigation
-- [ ] On click, move to the selected `title2` section  
-- [ ] Implement scroll/page transition animation  
-- [ ] Auto-save current state before moving  
+- [x] On click, move to the selected `title2` section
+- [x] Implement scroll/page transition animation
+- [x] Auto-save current state before moving  
 
 ---
 

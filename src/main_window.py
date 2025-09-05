@@ -36,6 +36,10 @@ class MainWindow(ctk.CTk):
         self.current_title1_index = 0
         self.current_title2_index = 0
 
+        # UI components for stepper
+        self.stepper_frame = None
+        self.step_buttons = []
+
         # UI components
         self.first_screen = None
         self.sidebar_frame = None
@@ -201,21 +205,170 @@ class MainWindow(ctk.CTk):
 
         current_title1 = self.title1_nodes[self.current_title1_index]
 
-        # Header
-        header_label = ctk.CTkLabel(
-            self.main_content_frame,
-            text=current_title1.label,
-            font=ctk.CTkFont(size=20, weight="bold")
-        )
-        header_label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w")
+        # Header with progress
+        self.create_header_with_progress(current_title1)
 
-        # Placeholder for stepper and checklist
+        # Stepper UI
+        self.create_stepper(current_title1)
+
+        # Placeholder for checklist
         content_label = ctk.CTkLabel(
             self.main_content_frame,
-            text="Main content area - Stepper and checklist will be implemented in next phases",
+            text="Checklist area will be implemented in Phase 5",
             font=ctk.CTkFont(size=14)
         )
-        content_label.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
+        content_label.grid(row=2, column=0, padx=20, pady=20, sticky="nsew")
+
+    def create_header_with_progress(self, current_title1):
+        """Create header with title and progress information"""
+        # Header frame
+        header_frame = ctk.CTkFrame(self.main_content_frame, fg_color="transparent")
+        header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+        header_frame.grid_columnconfigure(1, weight=1)
+
+        # Title label
+        header_label = ctk.CTkLabel(
+            header_frame,
+            text=current_title1.label,
+            font=ctk.CTkFont(size=20, weight="bold"),
+            anchor="w"
+        )
+        header_label.grid(row=0, column=0, sticky="w")
+
+        # Progress information
+        if self.state_manager:
+            total_checked, total_items = self.state_manager.get_overall_progress(self.title1_nodes)
+            progress_text = f"전체 진행률: {total_checked}/{total_items}"
+
+            progress_label = ctk.CTkLabel(
+                header_frame,
+                text=progress_text,
+                font=ctk.CTkFont(size=14),
+                anchor="e"
+            )
+            progress_label.grid(row=0, column=1, sticky="e")
+
+    def create_stepper(self, current_title1):
+        """Create stepper UI with title2 buttons"""
+        # Stepper frame
+        self.stepper_frame = ctk.CTkFrame(self.main_content_frame, fg_color="transparent")
+        self.stepper_frame.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="ew")
+        self.stepper_frame.grid_columnconfigure(0, weight=1)
+
+        # Clear previous step buttons
+        self.step_buttons.clear()
+
+        # Get title2 children
+        title2_nodes = current_title1.get_title2_children()
+
+        if not title2_nodes:
+            return
+
+        # Create step buttons
+        for i, title2 in enumerate(title2_nodes):
+            self.create_step_button(i, title2, len(title2_nodes))
+
+    def create_step_button(self, index: int, title2, total_steps: int):
+        """Create individual step button"""
+        # Determine step status
+        is_completed = title2.is_completed(self.state_manager) if self.state_manager else False
+        is_current = index == self.current_title2_index
+
+        # Step number and label
+        step_number = index + 1
+        step_text = f"{step_number}. {title2.label}"
+
+        # Add completion indicator
+        if is_completed:
+            step_text = f"✓ {step_text}"
+
+        # Button styling based on status
+        if is_current:
+            fg_color = "#FF6B35"  # High-contrast orange for current
+            text_color = "white"
+            border_width = 2
+            border_color = "#CC5525"
+        elif is_completed:
+            fg_color = "#4CAF50"  # Green for completed
+            text_color = "white"
+            border_width = 1
+            border_color = "#388E3C"
+        else:
+            fg_color = "#F0F0F0"  # Light gray for pending
+            text_color = "#333333"
+            border_width = 1
+            border_color = "#CCCCCC"
+
+        # Create button
+        button = ctk.CTkButton(
+            self.stepper_frame,
+            text=step_text,
+            command=lambda idx=index: self.select_title2(idx),
+            font=ctk.CTkFont(size=14),
+            height=50,
+            fg_color=fg_color,
+            text_color=text_color,
+            border_width=border_width,
+            border_color=border_color,
+            anchor="w"
+        )
+        button.grid(row=index, column=0, padx=5, pady=2, sticky="ew")
+        self.step_buttons.append(button)
+
+    def select_title2(self, index: int):
+        """Handle title2 selection from stepper"""
+        # Auto-save current state before switching
+        if self.state_manager:
+            self.state_manager.save_state()
+
+        self.current_title2_index = index
+
+        # Update stepper UI to reflect new selection
+        current_title1 = self.title1_nodes[self.current_title1_index]
+        self.update_stepper_buttons(current_title1)
+
+    def update_stepper_buttons(self, current_title1):
+        """Update stepper button states after selection change"""
+        title2_nodes = current_title1.get_title2_children()
+
+        for i, (button, title2) in enumerate(zip(self.step_buttons, title2_nodes)):
+            # Determine step status
+            is_completed = title2.is_completed(self.state_manager) if self.state_manager else False
+            is_current = i == self.current_title2_index
+
+            # Step number and label
+            step_number = i + 1
+            step_text = f"{step_number}. {title2.label}"
+
+            # Add completion indicator
+            if is_completed:
+                step_text = f"✓ {step_text}"
+
+            # Update button styling and text
+            if is_current:
+                button.configure(
+                    text=step_text,
+                    fg_color="#FF6B35",
+                    text_color="white",
+                    border_width=2,
+                    border_color="#CC5525"
+                )
+            elif is_completed:
+                button.configure(
+                    text=step_text,
+                    fg_color="#4CAF50",
+                    text_color="white",
+                    border_width=1,
+                    border_color="#388E3C"
+                )
+            else:
+                button.configure(
+                    text=step_text,
+                    fg_color="#F0F0F0",
+                    text_color="#333333",
+                    border_width=1,
+                    border_color="#CCCCCC"
+                )
 
     def select_title1(self, index: int):
         """Handle title1 selection"""
