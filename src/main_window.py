@@ -146,8 +146,9 @@ class MainWindow(ctk.CTk):
 
         # Configure main content layout
         self.main_content_frame.grid_columnconfigure(0, weight=1)
-        self.main_content_frame.grid_rowconfigure((0, 1, 2), weight=0)  # Header, stepper, checklist
-        self.main_content_frame.grid_rowconfigure(1, weight=1)  # Checklist expands
+        self.main_content_frame.grid_rowconfigure(0, weight=0)  # Header - fixed height
+        self.main_content_frame.grid_rowconfigure(1, weight=0)  # Stepper - fixed height
+        self.main_content_frame.grid_rowconfigure(2, weight=1)  # Checklist - expands
 
     def create_navigation(self):
         """Create bottom navigation area"""
@@ -210,13 +211,8 @@ class MainWindow(ctk.CTk):
         # Stepper UI
         self.create_stepper(current_title1)
 
-        # Placeholder for checklist
-        content_label = ctk.CTkLabel(
-            self.main_content_frame,
-            text="Checklist area will be implemented in Phase 5",
-            font=ctk.CTkFont(size=14)
-        )
-        content_label.grid(row=2, column=0, padx=20, pady=20, sticky="nsew")
+        # Checklist content area
+        self.create_checklist_area(current_title1)
 
     def create_header_with_progress(self, current_title1):
         """Create header with title and progress information"""
@@ -250,9 +246,9 @@ class MainWindow(ctk.CTk):
     def create_stepper(self, current_title1):
         """Create stepper UI with title2 buttons"""
         # Stepper frame
-        self.stepper_frame = ctk.CTkFrame(self.main_content_frame, fg_color="transparent")
-        self.stepper_frame.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="ew")
-        self.stepper_frame.grid_columnconfigure(0, weight=1)
+        self.stepper_frame = ctk.CTkFrame(self.main_content_frame, fg_color="transparent", height=70)
+        self.stepper_frame.grid(row=1, column=0, padx=20, pady=(5, 10), sticky="ew")
+        self.stepper_frame.grid_propagate(False)  # Don't shrink
 
         # Clear previous step buttons
         self.step_buttons.clear()
@@ -263,9 +259,15 @@ class MainWindow(ctk.CTk):
         if not title2_nodes:
             return
 
-        # Create step buttons
+        # Configure stepper grid for horizontal layout
+        total_steps = len(title2_nodes)
+        for i in range(total_steps):
+            self.stepper_frame.grid_columnconfigure(i, weight=1)
+        self.stepper_frame.grid_rowconfigure(0, weight=1)
+
+        # Create step buttons horizontally
         for i, title2 in enumerate(title2_nodes):
-            self.create_step_button(i, title2, len(title2_nodes))
+            self.create_step_button(i, title2, total_steps)
 
     def create_step_button(self, index: int, title2, total_steps: int):
         """Create individual step button"""
@@ -303,28 +305,17 @@ class MainWindow(ctk.CTk):
             self.stepper_frame,
             text=step_text,
             command=lambda idx=index: self.select_title2(idx),
-            font=ctk.CTkFont(size=14),
+            font=ctk.CTkFont(size=12, weight="bold"),
             height=50,
             fg_color=fg_color,
             text_color=text_color,
             border_width=border_width,
             border_color=border_color,
-            anchor="w"
+            anchor="center"
         )
-        button.grid(row=index, column=0, padx=5, pady=2, sticky="ew")
+        button.grid(row=0, column=index, padx=3, pady=5, sticky="nsew")
         self.step_buttons.append(button)
 
-    def select_title2(self, index: int):
-        """Handle title2 selection from stepper"""
-        # Auto-save current state before switching
-        if self.state_manager:
-            self.state_manager.save_state()
-
-        self.current_title2_index = index
-
-        # Update stepper UI to reflect new selection
-        current_title1 = self.title1_nodes[self.current_title1_index]
-        self.update_stepper_buttons(current_title1)
 
     def update_stepper_buttons(self, current_title1):
         """Update stepper button states after selection change"""
@@ -376,6 +367,182 @@ class MainWindow(ctk.CTk):
 
         # Update UI
         self.update_sidebar()
+        self.update_main_content()
+
+    def select_title2(self, index: int):
+        """Handle title2 selection"""
+        # Auto-save current state before switching
+        if self.state_manager:
+            self.state_manager.save_state()
+            
+        self.current_title2_index = index
+        
+        # Update UI
+        self.update_main_content()
+
+    def create_checklist_area(self, current_title1):
+        """Create checklist area showing sections and items for current title2"""
+        # Get current title2
+        title2_nodes = current_title1.get_title2_children()
+        if not title2_nodes or self.current_title2_index >= len(title2_nodes):
+            return
+            
+        current_title2 = title2_nodes[self.current_title2_index]
+        
+        # Create scrollable checklist frame
+        self.checklist_frame = ctk.CTkScrollableFrame(
+            self.main_content_frame,
+            fg_color="transparent"
+        )
+        self.checklist_frame.grid(row=2, column=0, padx=10, pady=(5, 10), sticky="nsew")
+        self.checklist_frame.grid_columnconfigure(0, weight=1)
+        
+        # Get all sections under current title2
+        sections = current_title2.get_sections()
+        
+        if not sections:
+            # No sections, show message
+            no_content_label = ctk.CTkLabel(
+                self.checklist_frame,
+                text="이 단계에는 체크리스트 항목이 없습니다.",
+                font=ctk.CTkFont(size=16)
+            )
+            no_content_label.grid(row=0, column=0, padx=20, pady=40, sticky="ew")
+            return
+        
+        # Create section frames
+        for section_idx, section in enumerate(sections):
+            self.create_section_frame(section, section_idx)
+
+    def create_section_frame(self, section, section_idx: int):
+        """Create a frame for a single section with its items"""
+        # Section container frame
+        section_frame = ctk.CTkFrame(self.checklist_frame)
+        section_frame.grid(row=section_idx, column=0, padx=10, pady=10, sticky="ew")
+        section_frame.grid_columnconfigure(0, weight=1)
+        
+        # Section header with title and bulk select button
+        header_frame = ctk.CTkFrame(section_frame, fg_color="transparent")
+        header_frame.grid(row=0, column=0, padx=15, pady=(15, 10), sticky="ew")
+        header_frame.grid_columnconfigure(0, weight=1)
+        
+        # Section title
+        section_title = ctk.CTkLabel(
+            header_frame,
+            text=section.label,
+            font=ctk.CTkFont(size=18, weight="bold"),
+            anchor="w"
+        )
+        section_title.grid(row=0, column=0, sticky="w")
+        
+        # Progress display
+        if self.state_manager:
+            checked_count = section.get_checked_count(self.state_manager)
+            total_count = section.get_total_count()
+            progress_text = f"({checked_count}/{total_count})"
+            
+            progress_label = ctk.CTkLabel(
+                header_frame,
+                text=progress_text,
+                font=ctk.CTkFont(size=14),
+                anchor="e"
+            )
+            progress_label.grid(row=0, column=1, sticky="e", padx=(10, 0))
+        
+        # Bulk select button
+        bulk_button = ctk.CTkButton(
+            header_frame,
+            text="전체 선택/해제",
+            command=lambda s=section: self.toggle_section_items(s),
+            font=ctk.CTkFont(size=14),
+            height=35,
+            width=120
+        )
+        bulk_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
+        
+        # Items container
+        items_frame = ctk.CTkFrame(section_frame, fg_color="transparent")
+        items_frame.grid(row=1, column=0, padx=15, pady=(0, 15), sticky="ew")
+        items_frame.grid_columnconfigure(0, weight=1)
+        
+        # Create checkboxes for each item
+        for item_idx, item in enumerate(section.items):
+            self.create_item_checkbox(items_frame, section, item, item_idx)
+
+    def create_item_checkbox(self, parent_frame, section, item: str, item_idx: int):
+        """Create a checkbox for a single checklist item"""
+        # Check if item is currently checked
+        is_checked = False
+        if self.state_manager:
+            is_checked = self.state_manager.is_item_checked(section.id, item)
+        
+        # Create checkbox frame
+        checkbox_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
+        checkbox_frame.grid(row=item_idx, column=0, padx=5, pady=3, sticky="ew")
+        checkbox_frame.grid_columnconfigure(1, weight=1)
+        
+        # Checkbox
+        checkbox = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="",
+            command=lambda: self.toggle_item(section.id, item),
+            font=ctk.CTkFont(size=16),
+            checkbox_width=24,
+            checkbox_height=24
+        )
+        checkbox.grid(row=0, column=0, padx=(5, 10), pady=5, sticky="w")
+        
+        # Set initial state
+        if is_checked:
+            checkbox.select()
+        else:
+            checkbox.deselect()
+        
+        # Item text label
+        item_label = ctk.CTkLabel(
+            checkbox_frame,
+            text=item,
+            font=ctk.CTkFont(size=16),
+            anchor="w",
+            justify="left"
+        )
+        item_label.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="ew")
+
+    def toggle_item(self, section_id: str, item: str):
+        """Toggle individual item checkbox state"""
+        if not self.state_manager:
+            return
+            
+        # Toggle state
+        current_state = self.state_manager.is_item_checked(section_id, item)
+        self.state_manager.set_item_checked(section_id, item, not current_state)
+        
+        # Save state
+        self.state_manager.save_state()
+        
+        # Update UI to reflect changes
+        self.update_main_content()
+
+    def toggle_section_items(self, section):
+        """Toggle all items in a section"""
+        if not self.state_manager:
+            return
+            
+        # Check if all items are currently checked
+        checked_count = section.get_checked_count(self.state_manager)
+        total_count = section.get_total_count()
+        
+        # If all are checked, uncheck all. Otherwise, check all.
+        new_state = not (checked_count == total_count)
+        
+        # Update all items in the section
+        for item in section.items:
+            self.state_manager.set_item_checked(section.id, item, new_state)
+        
+        # Save state
+        self.state_manager.save_state()
+        
+        # Update UI to reflect changes
         self.update_main_content()
 
     def run(self):
