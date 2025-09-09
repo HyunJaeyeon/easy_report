@@ -61,10 +61,10 @@ class MainWindow(ctk.CTk):
             if not ChecklistParser.validate_structure(self.title1_nodes):
                 raise ValueError("Invalid checklist structure")
 
-            print(f"✅ Loaded {len(self.title1_nodes)} title1 nodes")
+            print(f"[OK] Loaded {len(self.title1_nodes)} title1 nodes")
 
         except Exception as e:
-            print(f"❌ Error loading checklist: {e}")
+            print(f"[ERROR] Error loading checklist: {e}")
             # Create empty list as fallback
             self.title1_nodes = []
 
@@ -173,8 +173,7 @@ class MainWindow(ctk.CTk):
                 command=lambda idx=i: self.select_title1(idx),
                 font=ctk.CTkFont(size=16),
                 height=60,
-                anchor="w",
-                justify="left"
+                anchor="w"
             )
             button.grid(row=i, column=0, padx=10, pady=5, sticky="ew")
 
