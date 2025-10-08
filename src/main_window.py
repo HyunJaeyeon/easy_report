@@ -114,6 +114,7 @@ class MainWindow(ctk.CTk):
         # Load initial content
         self.update_sidebar()
         self.update_main_content()
+        self.update_navigation_buttons()
 
     def create_sidebar(self):
         """Create left sidebar"""
@@ -159,6 +160,9 @@ class MainWindow(ctk.CTk):
         # Configure navigation layout
         self.navigation_frame.grid_columnconfigure((0, 1, 2), weight=1)
         self.navigation_frame.grid_rowconfigure(0, weight=1)
+
+        # Create navigation buttons
+        self.update_navigation_buttons()
 
     def update_sidebar(self):
         """Update sidebar with title1 buttons"""
@@ -368,6 +372,7 @@ class MainWindow(ctk.CTk):
         # Update UI
         self.update_sidebar()
         self.update_main_content()
+        self.update_navigation_buttons()
 
     def select_title2(self, index: int):
         """Handle title2 selection"""
@@ -379,6 +384,7 @@ class MainWindow(ctk.CTk):
         
         # Update UI
         self.update_main_content()
+        self.update_navigation_buttons()
 
     def create_checklist_area(self, current_title1):
         """Create checklist area showing sections and items for current title2"""
@@ -544,6 +550,103 @@ class MainWindow(ctk.CTk):
         
         # Update UI to reflect changes
         self.update_main_content()
+
+    def update_navigation_buttons(self):
+        """Update navigation buttons based on current state"""
+        # Clear existing buttons
+        for widget in self.navigation_frame.winfo_children():
+            widget.destroy()
+        
+        if not self.title1_nodes:
+            return
+            
+        current_title1 = self.title1_nodes[self.current_title1_index]
+        title2_nodes = current_title1.get_title2_children()
+        
+        if not title2_nodes:
+            return
+        
+        total_steps = len(title2_nodes)
+        is_first_step = self.current_title2_index == 0
+        is_last_step = self.current_title2_index == total_steps - 1
+        
+        # Previous button
+        prev_button = ctk.CTkButton(
+            self.navigation_frame,
+            text="◀ 이전",
+            command=self.go_to_previous_step,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            height=40,
+            width=120,
+            fg_color="#6C757D" if is_first_step else "#007BFF",
+            text_color="white",
+            state="disabled" if is_first_step else "normal"
+        )
+        prev_button.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        
+        # Step info in the center
+        step_info = ctk.CTkLabel(
+            self.navigation_frame,
+            text=f"{self.current_title2_index + 1} / {total_steps}",
+            font=ctk.CTkFont(size=14, weight="bold")
+        )
+        step_info.grid(row=0, column=1, pady=10)
+        
+        # Next button (or Complete button for last step)
+        if is_last_step:
+            next_button_text = "완료 ▶"
+            next_command = self.go_to_final_review
+            next_color = "#28A745"  # Green for completion
+        else:
+            next_button_text = "다음 ▶"
+            next_command = self.go_to_next_step
+            next_color = "#007BFF"  # Blue for next
+        
+        next_button = ctk.CTkButton(
+            self.navigation_frame,
+            text=next_button_text,
+            command=next_command,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            height=40,
+            width=120,
+            fg_color=next_color,
+            text_color="white"
+        )
+        next_button.grid(row=0, column=2, padx=10, pady=10, sticky="e")
+
+    def go_to_previous_step(self):
+        """Navigate to previous title2 step"""
+        if self.current_title2_index > 0:
+            # Auto-save current state
+            if self.state_manager:
+                self.state_manager.save_state()
+            
+            self.current_title2_index -= 1
+            self.update_main_content()
+            self.update_navigation_buttons()
+
+    def go_to_next_step(self):
+        """Navigate to next title2 step"""
+        current_title1 = self.title1_nodes[self.current_title1_index]
+        title2_nodes = current_title1.get_title2_children()
+        
+        if self.current_title2_index < len(title2_nodes) - 1:
+            # Auto-save current state
+            if self.state_manager:
+                self.state_manager.save_state()
+            
+            self.current_title2_index += 1
+            self.update_main_content()
+            self.update_navigation_buttons()
+
+    def go_to_final_review(self):
+        """Navigate to final review page (Phase 7)"""
+        # Auto-save current state
+        if self.state_manager:
+            self.state_manager.save_state()
+        
+        # TODO: Implement final review page in Phase 7
+        print("[INFO] Final review page will be implemented in Phase 7")
 
     def run(self):
         """Start the application"""
