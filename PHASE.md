@@ -10,79 +10,79 @@
 ## 📋 Phase 1: Project Setup and Data Structure Implementation
 
 ### 1.1 Development Environment Setup
-- [ ] Set up Python virtual environment  
-- [ ] Install CustomTkinter and required packages  
-- [ ] Design project folder structure  
-- [ ] Initialize Git  
+- [x] Set up Python virtual environment
+- [x] Install CustomTkinter and required packages
+- [x] Design project folder structure
+- [x] Initialize Git  
 
 ### 1.2 Data Parsing and Structuring
-- [ ] Implement `checklist.json` parser  
-  - [ ] JSON load and validation function  
-  - [ ] Node classification by type (`title1` → `title2` → `section`)  
-  - [ ] Tree builder function for hierarchy  
-- [ ] Design data model classes  
-  - [ ] Base class `ChecklistNode`  
-  - [ ] Subclasses: `Title1`, `Title2`, `Section`  
-- [ ] Basic state management system  
-  - [ ] Mechanism to save/load checkbox states  
-  - [ ] Progress calculation logic  
+- [x] Implement `checklist.json` parser
+  - [x] JSON load and validation function
+  - [x] Node classification by type (`title1` → `title2` → `section`)
+  - [x] Tree builder function for hierarchy
+- [x] Design data model classes
+  - [x] Base class `ChecklistNode`
+  - [x] Subclasses: `Title1`, `Title2`, `Section`
+- [x] Basic state management system
+  - [x] Mechanism to save/load checkbox states
+  - [x] Progress calculation logic  
 
 ---
 
 ## 📱 Phase 2: First Screen and Basic UI Layout
 
 ### 2.1 First Screen (Initialization)
-- [ ] Company name input field (large font)  
-- [ ] HWP file upload feature  
-  - [ ] File selection dialog  
-  - [ ] File validation (hwp extension)  
-  - [ ] Display upload status  
-- [ ] [확인] button → Navigate to checklist screen  
+- [x] Company name input field (large font)
+- [x] HWP file upload feature
+  - [x] File selection dialog
+  - [x] File validation (hwp extension)
+  - [x] Display upload status
+- [x] [확인] button → Navigate to checklist screen  
 
 ### 2.2 Main Window Layout
-- [ ] Define overall window size and minimum size  
-- [ ] Define left sidebar area  
-- [ ] Define right main content area  
-- [ ] Define bottom navigation area  
-- [ ] Implement responsive layout (handle window resizing)  
+- [x] Define overall window size and minimum size
+- [x] Define left sidebar area
+- [x] Define right main content area
+- [x] Define bottom navigation area
+- [x] Implement responsive layout (handle window resizing)  
 
 ---
 
 ## 🎯 Phase 3: Sidebar Implementation
 
 ### 3.1 Dynamic Sidebar Generation
-- [ ] Render `title1` items as buttons  
-- [ ] Display company name + "3차 보고서" at the top  
-- [ ] Highlight currently selected `title1`  
+- [x] Render `title1` items as buttons
+- [x] Display company name + "3차 보고서" at the top
+- [x] Highlight currently selected `title1`
 
 ### 3.2 Sidebar Navigation
-- [ ] Handle `title1` button click events  
-- [ ] Context switch logic for main page  
-- [ ] Visual feedback for selection (background, border)  
+- [x] Handle `title1` button click events
+- [x] Context switch logic for main page
+- [x] Visual feedback for selection (background, border)
 
 ### 3.3 Senior-Friendly UI
-- [ ] Enlarge button size (minimum height 60px)  
-- [ ] Increase font size (minimum 14pt)  
-- [ ] Apply high-contrast colors  
+- [x] Enlarge button size (minimum height 60px)
+- [x] Increase font size (minimum 16pt)
+- [x] Apply high-contrast colors  
 
 ---
 
 ## 📊 Phase 4: Main Page – Header and Stepper
 
 ### 4.1 Main Page Header
-- [ ] Display current `title1.label` as a large title  
-- [ ] Show progress (steps completed vs total)  
+- [x] Display current `title1.label` as a large title
+- [x] Show progress (steps completed vs total)
 
 ### 4.2 Stepper UI
-- [ ] Display `title2` children of the current `title1` as steps  
-- [ ] Format: Step number + label (e.g., "1. 위험성평가 사전준비")  
-- [ ] Show checkmark (✓) for completed steps  
-- [ ] Highlight current step  
+- [x] Display `title2` children of the current `title1` as steps
+- [x] Format: Step number + label (e.g., "1. 위험성평가 사전준비")
+- [x] Show checkmark (✓) for completed steps
+- [x] Highlight current step
 
 ### 4.3 Stepper Navigation
-- [ ] On click, move to the selected `title2` section  
-- [ ] Implement scroll/page transition animation  
-- [ ] Auto-save current state before moving  
+- [x] On click, move to the selected `title2` section
+- [x] Implement scroll/page transition animation
+- [x] Auto-save current state before moving  
 
 ---
 
