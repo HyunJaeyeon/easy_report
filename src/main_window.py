@@ -519,15 +519,11 @@ class MainWindow(ctk.CTk):
         if not self.state_manager:
             return
             
-        # Toggle state
+        # Toggle state (메모리에서만 변경, 저장하지 않음)
         current_state = self.state_manager.is_item_checked(section_id, item)
-        self.state_manager.set_item_checked(section_id, item, not current_state)
+        self.state_manager.set_item_checked_no_save(section_id, item, not current_state)
         
-        # Save state
-        self.state_manager.save_state()
-        
-        # Update UI to reflect changes
-        self.update_main_content()
+        # UI 업데이트는 하지 않음 (성능 최적화)
 
     def toggle_section_items(self, section):
         """Toggle all items in a section"""
@@ -541,15 +537,11 @@ class MainWindow(ctk.CTk):
         # If all are checked, uncheck all. Otherwise, check all.
         new_state = not (checked_count == total_count)
         
-        # Update all items in the section
+        # Update all items in the section (메모리에서만, 저장하지 않음)
         for item in section.items:
-            self.state_manager.set_item_checked(section.id, item, new_state)
+            self.state_manager.set_item_checked_no_save(section.id, item, new_state)
         
-        # Save state
-        self.state_manager.save_state()
-        
-        # Update UI to reflect changes
-        self.update_main_content()
+        # UI 업데이트하지 않음 (성능 최적화)
 
     def update_navigation_buttons(self):
         """Update navigation buttons based on current state"""
@@ -850,31 +842,147 @@ class MainWindow(ctk.CTk):
         self.show_main_screen()
 
     def convert_to_hwp(self):
-        """Convert checklist to HWP file (placeholder)"""
-        # Create simple dialog for now
-        result_window = ctk.CTkToplevel(self)
-        result_window.title("HWP 변환")
-        result_window.geometry("400x200")
-        result_window.resizable(False, False)
+        """Convert checklist to HWP file"""
+        if not self.hwp_file_path:
+            self.show_error_dialog("HWP 변환 실패", "원본 HWP 파일이 설정되지 않았습니다.\n첫 화면에서 HWP 파일을 선택해주세요.")
+            return
+
+        # 변환 중 표시할 다이얼로그
+        progress_window = self.create_progress_dialog()
+        
+        # 별도 스레드에서 변환 실행
+        import threading
+        
+        def perform_conversion():
+            try:
+                from hwp_converter import HWPConverter, check_hwp_available
+                
+                if not check_hwp_available():
+                    self.after(0, lambda: self.handle_conversion_error(progress_window, 
+                        "한글(HWP) 프로그램이 설치되어 있지 않습니다."))
+                    return
+                
+                converter = HWPConverter()
+                
+                # 체크된 항목 수집
+                checked_items_data = {
+                    'checked_items': list(self.state_manager.checked_items) if self.state_manager else []
+                }
+                
+                # HWP 변환 실행
+                success, message = converter.convert_checklist_to_hwp(
+                    self.hwp_file_path,
+                    self.company_name,
+                    checked_items_data,
+                    self.title1_nodes
+                )
+                
+                # UI 스레드에서 결과 표시
+                self.after(0, lambda: self.handle_conversion_result(progress_window, success, message))
+                
+            except Exception as e:
+                error_msg = f"변환 중 예상치 못한 오류가 발생했습니다:\n{str(e)}"
+                self.after(0, lambda: self.handle_conversion_error(progress_window, error_msg))
+        
+        threading.Thread(target=perform_conversion, daemon=True).start()
+
+    def create_progress_dialog(self):
+        """변환 진행 중 표시할 다이얼로그 생성"""
+        progress_window = ctk.CTkToplevel(self)
+        progress_window.title("HWP 변환 중...")
+        progress_window.geometry("400x150")
+        progress_window.resizable(False, False)
         
         # Center the window
+        progress_window.transient(self)
+        progress_window.grab_set()
+        
+        progress_label = ctk.CTkLabel(
+            progress_window,
+            text="체크리스트를 HWP 파일로 변환하고 있습니다...\n잠시만 기다려주세요.",
+            font=ctk.CTkFont(size=14),
+            justify="center"
+        )
+        progress_label.pack(expand=True, pady=20)
+        
+        # Progress bar (indeterminate)
+        import tkinter as tk
+        from tkinter import ttk
+        progress_bar = ttk.Progressbar(progress_window, mode='indeterminate')
+        progress_bar.pack(pady=(0, 20), padx=20, fill='x')
+        progress_bar.start(10)
+        
+        return progress_window
+
+    def handle_conversion_result(self, progress_window, success: bool, message: str):
+        """변환 결과 처리"""
+        progress_window.destroy()
+        
+        if success:
+            self.show_success_dialog("HWP 변환 완료", message)
+        else:
+            self.show_error_dialog("HWP 변환 실패", message)
+
+    def handle_conversion_error(self, progress_window, error_message: str):
+        """변환 오류 처리"""
+        progress_window.destroy()
+        self.show_error_dialog("HWP 변환 오류", error_message)
+
+    def show_success_dialog(self, title: str, message: str):
+        """성공 다이얼로그 표시"""
+        result_window = ctk.CTkToplevel(self)
+        result_window.title(title)
+        result_window.geometry("500x250")
+        result_window.resizable(False, False)
+        
         result_window.transient(self)
         result_window.grab_set()
         
         result_label = ctk.CTkLabel(
             result_window,
-            text="HWP 변환 기능은 추후 구현 예정입니다.\n\n현재는 체크리스트 요약만 확인 가능합니다.",
-            font=ctk.CTkFont(size=14),
-            justify="center"
+            text=message,
+            font=ctk.CTkFont(size=12),
+            justify="left",
+            wraplength=450
         )
-        result_label.pack(expand=True, pady=20)
+        result_label.pack(expand=True, pady=20, padx=20)
         
         close_button = ctk.CTkButton(
             result_window,
             text="확인",
             command=result_window.destroy,
             width=100,
-            height=35
+            height=35,
+            fg_color="#28A745"
+        )
+        close_button.pack(pady=(0, 20))
+
+    def show_error_dialog(self, title: str, message: str):
+        """오류 다이얼로그 표시"""
+        result_window = ctk.CTkToplevel(self)
+        result_window.title(title)
+        result_window.geometry("500x200")
+        result_window.resizable(False, False)
+        
+        result_window.transient(self)
+        result_window.grab_set()
+        
+        result_label = ctk.CTkLabel(
+            result_window,
+            text=message,
+            font=ctk.CTkFont(size=12),
+            justify="left",
+            wraplength=450
+        )
+        result_label.pack(expand=True, pady=20, padx=20)
+        
+        close_button = ctk.CTkButton(
+            result_window,
+            text="확인",
+            command=result_window.destroy,
+            width=100,
+            height=35,
+            fg_color="#DC3545"
         )
         close_button.pack(pady=(0, 20))
 

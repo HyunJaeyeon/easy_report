@@ -114,8 +114,76 @@ class FirstScreen(ctk.CTkFrame):
             self.hwp_file_path = file_path
             file_name = os.path.basename(file_path)
             self.file_label.configure(text=f"선택된 파일: {file_name}", text_color="black")
+            
+            # HWP 필드 검증 (백그라운드에서 실행)
+            self.validate_hwp_fields_async(file_path)
         else:
             self.file_label.configure(text="파일을 선택해주세요", text_color="gray")
+
+    def validate_hwp_fields_async(self, file_path: str):
+        """HWP 파일의 필드를 비동기적으로 검증"""
+        # 별도 스레드에서 실행하여 UI 블로킹 방지
+        import threading
+        
+        def validate_fields():
+            try:
+                # HWP 변환기 임포트 (필요 시에만)
+                import sys
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                if current_dir not in sys.path:
+                    sys.path.insert(0, current_dir)
+                
+                from hwp_converter import HWPConverter, check_hwp_available
+                
+                if not check_hwp_available():
+                    self.after(0, lambda: self.show_hwp_warning("한글(HWP) 프로그램이 설치되어 있지 않습니다."))
+                    return
+                
+                converter = HWPConverter()
+                fields = converter.detect_hwp_fields(file_path)
+                
+                # UI 스레드에서 결과 표시
+                self.after(0, lambda: self.display_field_validation_result(fields))
+                
+            except Exception as e:
+                error_msg = f"HWP 필드 검증 중 오류: {str(e)}"
+                self.after(0, lambda: self.show_hwp_warning(error_msg))
+        
+        threading.Thread(target=validate_fields, daemon=True).start()
+
+    def display_field_validation_result(self, detected_fields: list):
+        """필드 검증 결과를 표시"""
+        try:
+            if detected_fields:
+                field_count = len(detected_fields)
+                message = f"HWP 필드 {field_count}개 감지됨 ✓"
+                current_text = self.file_label.cget('text')
+                self.file_label.configure(
+                    text=f"{current_text}\n{message}", 
+                    text_color="green"
+                )
+            else:
+                message = "감지된 HWP 필드가 없습니다"
+                current_text = self.file_label.cget('text')
+                self.file_label.configure(
+                    text=f"{current_text}\n{message}", 
+                    text_color="orange"
+                )
+        except:
+            # UI가 이미 파괴된 경우 무시
+            pass
+
+    def show_hwp_warning(self, message: str):
+        """HWP 관련 경고 메시지 표시"""
+        try:
+            current_text = self.file_label.cget('text')
+            self.file_label.configure(
+                text=f"{current_text}\n⚠️ {message}", 
+                text_color="red"
+            )
+        except:
+            # UI가 이미 파괴된 경우 무시
+            pass
 
     def confirm_and_proceed(self):
         """Validate inputs and proceed to next screen"""

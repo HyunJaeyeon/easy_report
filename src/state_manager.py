@@ -36,7 +36,7 @@ class StateManager:
         return key in self.checked_items
 
     def set_item_checked(self, section_id: str, item_text: str, checked: bool):
-        """Set checked state for an item"""
+        """Set checked state for an item and save"""
         key = self._generate_item_key(section_id, item_text)
         if checked:
             self.checked_items.add(key)
@@ -45,6 +45,14 @@ class StateManager:
 
         # Auto-save after state change
         self.save_state()
+
+    def set_item_checked_no_save(self, section_id: str, item_text: str, checked: bool):
+        """Set checked state for an item without saving (performance optimization)"""
+        key = self._generate_item_key(section_id, item_text)
+        if checked:
+            self.checked_items.add(key)
+        else:
+            self.checked_items.discard(key)
 
     def toggle_item(self, section_id: str, item_text: str):
         """Toggle checked state for an item"""
