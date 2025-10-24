@@ -34,28 +34,26 @@ class HWPConverter:
             time.sleep(0.5)
 
             # HWP에서 필드 목록을 가져오는 방법
-            # checklist.json의 실제 섹션 ID들을 체크
+            # 일반적으로 사용되는 필드명들을 체크
             common_field_names = [
-                # checklist.json의 실제 섹션 id들
+                # checklist.json의 id들과 매칭 가능한 필드명들
+                "summary", "please_do_this", "current_status_of_company",
                 "please_do_this_manager", "please_do_this_worker",
                 "current_status_of_company_strengths", "current_status_of_company_improvements",
+                "risk_assessment", "pre_preparation", "identify_factors", 
+                "implement_countermeasures", "share_results",
                 "pre_preparation_issues_and_improvements", "pre_preparation_consulting_contents",
                 "identify_factors_issues_and_improvements", "identify_factors_consulting_contents",
                 "implement_countermeasures_issues_and_improvements", "implement_countermeasures_consulting_contents",
                 "share_results_issues_and_improvements", "share_results_consulting_contents",
-                # 테스트용 필드들
-                "text1", "text2", "text3", "image1"
+                # 기타 가능한 필드들
+                "company_name", "report_date", "consultant_name"
             ]
 
             for field_name in common_field_names:
-                # MoveToField로 필드 존재 여부 확인 (더 안전한 방법)
-                try:
-                    if hwp.MoveToField(field_name):
-                        fields.append(field_name)
-                        print(f"✓ 필드 발견: {field_name}")
-                except:
-                    # 오류가 발생하면 무시 (필드가 없음)
-                    pass
+                if hwp.MoveToField(field_name):
+                    fields.append(field_name)
+                    print(f"✓ 필드 발견: {field_name}")
 
             return fields
 
@@ -108,6 +106,17 @@ class HWPConverter:
             self.hwp.Open(hwp_file_path)
             time.sleep(1)
 
+            # 회사명 입력
+            if self.hwp.MoveToField("company_name"):
+                self.hwp.PutFieldText("company_name", company_name)
+                print(f"✓ 회사명 입력: {company_name}")
+
+            # 보고서 생성 날짜 입력
+            if self.hwp.MoveToField("report_date"):
+                current_date = datetime.now().strftime("%Y년 %m월 %d일")
+                self.hwp.PutFieldText("report_date", current_date)
+                print(f"✓ 보고서 날짜 입력: {current_date}")
+
             # 체크리스트 내용을 HWP 필드에 매핑
             success_count = 0
             total_fields = 0
@@ -122,20 +131,33 @@ class HWPConverter:
                         for item in section.items:
                             item_key = f"{section.id}::{item}"
                             if item_key in checked_items.get('checked_items', []):
-                                section_checked_items.append(f"• {item}")
+                                section_checked_items.append(item)
 
-                        # HWP 필드에 내용 입력 (테스트 코드와 동일한 방식)
-                        field_content = "\n".join(section_checked_items) if section_checked_items else "(체크된 항목 없음)"
-                        
-                        # 필드로 이동 후 텍스트 입력
-                        if self.hwp.PutFieldText(section.id, field_content):
-                            success_count += 1
-                            print(f"✓ {section.id} 필드 업데이트 완료 ({len(section_checked_items)}개 항목)")
-                        else:
-                            print(f"✗ {section.id} 필드를 찾을 수 없음")
-                            
-                        # 각 필드 입력 후 짧은 대기
-                        time.sleep(0.1)
+                        # HWP 필드에 내용 입력 (각 항목을 개별적으로 삽입하여 줄바꿈 보장)
+                        if self.hwp.MoveToField(section.id):
+                            # 필드 내용 초기화
+                            self.hwp.PutFieldText(section.id, "")
+
+                            if section_checked_items:
+                                # 필드로 다시 이동하여 텍스트 삽입
+                                self.hwp.MoveToField(section.id)
+
+                                # 각 항목을 삽입하고 줄바꿈 추가
+                                for idx, item in enumerate(section_checked_items):
+                                    self.hwp.HAction.GetDefault("InsertText", self.hwp.HParameterSet.HInsertText.HSet)
+                                    self.hwp.HParameterSet.HInsertText.Text = f"- {item}"
+                                    self.hwp.HAction.Execute("InsertText", self.hwp.HParameterSet.HInsertText.HSet)
+
+                                    # 마지막 항목이 아니면 줄바꿈 추가
+                                    if idx < len(section_checked_items) - 1:
+                                        self.hwp.HAction.Run("BreakPara")  # Enter 키 입력 (한 번만)
+
+                                success_count += 1
+                                print(f"✓ {section.id} 필드 업데이트 완료 ({len(section_checked_items)}개 항목)")
+                            else:
+                                # 체크된 항목이 없을 때
+                                self.hwp.PutFieldText(section.id, "(체크된 항목 없음)")
+                                success_count += 1
 
             # 출력 파일명 생성
             base_name = os.path.splitext(os.path.basename(hwp_file_path))[0]
@@ -209,6 +231,6 @@ def format_checklist_summary(title1_nodes: List, state_manager) -> str:
                 if checked_items:
                     summary_lines.append(f"\n    ● {section.label}")
                     for item in checked_items:
-                        summary_lines.append(f"      • {item}")
+                        summary_lines.append(f"      - {item}")
     
     return "\n".join(summary_lines)
