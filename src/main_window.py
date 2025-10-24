@@ -8,6 +8,16 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 from ui_first_screen import FirstScreen
 from models import ChecklistParser
 from state_manager import StateManager
@@ -55,7 +65,8 @@ class MainWindow(ctk.CTk):
     def load_checklist_data(self):
         """Load checklist data from JSON file"""
         try:
-            self.title1_nodes = ChecklistParser.load_from_file("data/checklist.json")
+            checklist_path = get_resource_path("data/checklist.json")
+            self.title1_nodes = ChecklistParser.load_from_file(checklist_path)
 
             # Validate structure
             if not ChecklistParser.validate_structure(self.title1_nodes):
@@ -234,18 +245,6 @@ class MainWindow(ctk.CTk):
         )
         header_label.grid(row=0, column=0, sticky="w")
 
-        # Progress information
-        if self.state_manager:
-            total_checked, total_items = self.state_manager.get_overall_progress(self.title1_nodes)
-            progress_text = f"전체 진행률: {total_checked}/{total_items}"
-
-            progress_label = ctk.CTkLabel(
-                header_frame,
-                text=progress_text,
-                font=ctk.CTkFont(size=14),
-                anchor="e"
-            )
-            progress_label.grid(row=0, column=1, sticky="e")
 
     def create_stepper(self, current_title1):
         """Create stepper UI with title2 buttons"""
@@ -275,46 +274,35 @@ class MainWindow(ctk.CTk):
 
     def create_step_button(self, index: int, title2, total_steps: int):
         """Create individual step button"""
-        # Determine step status
-        is_completed = title2.is_completed(self.state_manager) if self.state_manager else False
+        # Determine step status (완료 표시 제거)
         is_current = index == self.current_title2_index
 
-        # Step number and label
+        # Step number and label (깔끔하게)
         step_number = index + 1
         step_text = f"{step_number}. {title2.label}"
 
-        # Add completion indicator
-        if is_completed:
-            step_text = f"✓ {step_text}"
-
-        # Button styling based on status
+        # Button styling based on current selection only
         if is_current:
-            fg_color = "#FF6B35"  # High-contrast orange for current
+            fg_color = "#007ACC"  # 현재 선택된 단계는 파란색
             text_color = "white"
-            border_width = 2
-            border_color = "#CC5525"
-        elif is_completed:
-            fg_color = "#4CAF50"  # Green for completed
-            text_color = "white"
-            border_width = 1
-            border_color = "#388E3C"
+            border_width = 0
         else:
-            fg_color = "#F0F0F0"  # Light gray for pending
-            text_color = "#333333"
-            border_width = 1
-            border_color = "#CCCCCC"
+            fg_color = "#F5F5F5"  # 선택되지 않은 단계는 연한 회색
+            text_color = "#555555"
+            border_width = 0
 
-        # Create button
+        # Create button (현대적 스타일)
         button = ctk.CTkButton(
             self.stepper_frame,
             text=step_text,
             command=lambda idx=index: self.select_title2(idx),
             font=ctk.CTkFont(size=12, weight="bold"),
             height=50,
+            corner_radius=6,
             fg_color=fg_color,
             text_color=text_color,
             border_width=border_width,
-            border_color=border_color,
+            hover_color="#005A9F" if is_current else "#E8E8E8",
             anchor="center"
         )
         button.grid(row=0, column=index, padx=3, pady=5, sticky="nsew")
@@ -422,53 +410,50 @@ class MainWindow(ctk.CTk):
 
     def create_section_frame(self, section, section_idx: int):
         """Create a frame for a single section with its items"""
-        # Section container frame
-        section_frame = ctk.CTkFrame(self.checklist_frame)
-        section_frame.grid(row=section_idx, column=0, padx=10, pady=10, sticky="ew")
+        # Section container frame (현대적 디자인)
+        section_frame = ctk.CTkFrame(
+            self.checklist_frame,
+            corner_radius=8,
+            fg_color="#FAFAFA",
+            border_width=1,
+            border_color="#E0E0E0"
+        )
+        section_frame.grid(row=section_idx, column=0, padx=12, pady=8, sticky="ew")
         section_frame.grid_columnconfigure(0, weight=1)
         
         # Section header with title and bulk select button
         header_frame = ctk.CTkFrame(section_frame, fg_color="transparent")
-        header_frame.grid(row=0, column=0, padx=15, pady=(15, 10), sticky="ew")
+        header_frame.grid(row=0, column=0, padx=16, pady=(16, 12), sticky="ew")
         header_frame.grid_columnconfigure(0, weight=1)
         
-        # Section title
+        # Section title (더 세련된 스타일)
         section_title = ctk.CTkLabel(
             header_frame,
             text=section.label,
-            font=ctk.CTkFont(size=18, weight="bold"),
-            anchor="w"
+            font=ctk.CTkFont(size=17, weight="bold"),
+            anchor="w",
+            text_color="#1A1A1A"
         )
         section_title.grid(row=0, column=0, sticky="w")
         
-        # Progress display
-        if self.state_manager:
-            checked_count = section.get_checked_count(self.state_manager)
-            total_count = section.get_total_count()
-            progress_text = f"({checked_count}/{total_count})"
-            
-            progress_label = ctk.CTkLabel(
-                header_frame,
-                text=progress_text,
-                font=ctk.CTkFont(size=14),
-                anchor="e"
-            )
-            progress_label.grid(row=0, column=1, sticky="e", padx=(10, 0))
-        
-        # Bulk select button
+        # Bulk select button (깔끔한 디자인)
         bulk_button = ctk.CTkButton(
             header_frame,
             text="전체 선택/해제",
             command=lambda s=section: self.toggle_section_items(s),
-            font=ctk.CTkFont(size=14),
-            height=35,
-            width=120
+            font=ctk.CTkFont(size=13),
+            height=32,
+            width=110,
+            corner_radius=6,
+            fg_color="#f0f0f0",
+            text_color="#333333",
+            hover_color="#e0e0e0"
         )
-        bulk_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
+        bulk_button.grid(row=0, column=1, sticky="e", padx=(10, 0))
         
-        # Items container
+        # Items container (여백 조정)
         items_frame = ctk.CTkFrame(section_frame, fg_color="transparent")
-        items_frame.grid(row=1, column=0, padx=15, pady=(0, 15), sticky="ew")
+        items_frame.grid(row=1, column=0, padx=16, pady=(0, 16), sticky="ew")
         items_frame.grid_columnconfigure(0, weight=1)
         
         # Create checkboxes for each item
@@ -481,38 +466,53 @@ class MainWindow(ctk.CTk):
         is_checked = False
         if self.state_manager:
             is_checked = self.state_manager.is_item_checked(section.id, item)
-        
-        # Create checkbox frame
+
+        # Create checkbox frame (깔끔한 디자인)
         checkbox_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
-        checkbox_frame.grid(row=item_idx, column=0, padx=5, pady=3, sticky="ew")
+        checkbox_frame.grid(row=item_idx, column=0, padx=8, pady=4, sticky="ew")
         checkbox_frame.grid_columnconfigure(1, weight=1)
-        
-        # Checkbox
+
+        # Checkbox (현대적 스타일)
         checkbox = ctk.CTkCheckBox(
             checkbox_frame,
             text="",
             command=lambda: self.toggle_item(section.id, item),
-            font=ctk.CTkFont(size=16),
-            checkbox_width=24,
-            checkbox_height=24
+            font=ctk.CTkFont(size=15),
+            checkbox_width=20,
+            checkbox_height=20,
+            corner_radius=4,
+            border_width=2,
+            fg_color="#007ACC",
+            hover_color="#005A9F",
+            checkmark_color="white"
         )
-        checkbox.grid(row=0, column=0, padx=(5, 10), pady=5, sticky="w")
-        
+        checkbox.grid(row=0, column=0, padx=(8, 12), pady=6, sticky="nw")
+
         # Set initial state
         if is_checked:
             checkbox.select()
         else:
             checkbox.deselect()
-        
-        # Item text label
+
+        # Item text label (텍스트 줄바꿈 지원)
         item_label = ctk.CTkLabel(
             checkbox_frame,
             text=item,
-            font=ctk.CTkFont(size=16),
+            font=ctk.CTkFont(size=15),
             anchor="w",
-            justify="left"
+            justify="left",
+            text_color="#2D2D2D"
         )
-        item_label.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="ew")
+        item_label.grid(row=0, column=1, padx=(0, 12), pady=6, sticky="ew")
+
+        # 위젯이 화면에 배치된 후 실제 너비를 계산하여 wraplength 설정
+        def update_wraplength(event):
+            # 실제 Label이 차지할 수 있는 너비 계산 (여백 제외)
+            available_width = event.width - 30  # 좌우 여백 고려
+            if available_width > 50:  # 최소 너비 확보
+                item_label.configure(wraplength=available_width)
+
+        item_label.bind("<Configure>", update_wraplength)
 
     def toggle_item(self, section_id: str, item: str):
         """Toggle individual item checkbox state"""
@@ -541,7 +541,8 @@ class MainWindow(ctk.CTk):
         for item in section.items:
             self.state_manager.set_item_checked_no_save(section.id, item, new_state)
         
-        # UI 업데이트하지 않음 (성능 최적화)
+        # UI 업데이트 (전체 선택 시 체크박스 상태 반영)
+        self.update_main_content()
 
     def update_navigation_buttons(self):
         """Update navigation buttons based on current state"""
@@ -661,36 +662,31 @@ class MainWindow(ctk.CTk):
         # Auto-save current state
         if self.state_manager:
             self.state_manager.save_state()
-        
+
         # Clear current content
         for widget in self.winfo_children():
             widget.destroy()
 
-        # Configure layout for final review
+        # Configure layout for final review (풀스크린, 단일 컬럼)
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)  # Content area expands
-        self.grid_rowconfigure(1, weight=0)  # Button area fixed
-
-        # Create main content frame
-        content_frame = ctk.CTkFrame(self)
-        content_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-        content_frame.grid_columnconfigure(0, weight=1)
-        content_frame.grid_rowconfigure(1, weight=1)  # Summary area expands
+        self.grid_rowconfigure(0, weight=0)  # Header fixed
+        self.grid_rowconfigure(1, weight=1)  # Content area expands
+        self.grid_rowconfigure(2, weight=0)  # Button area fixed
 
         # Header
         header_label = ctk.CTkLabel(
-            content_frame,
+            self,
             text=f"{self.company_name} - 최종 검토 및 보고서 생성",
             font=ctk.CTkFont(size=20, weight="bold")
         )
         header_label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
 
         # Create scrollable summary area
-        self.create_hierarchical_summary(content_frame)
+        self.create_hierarchical_summary(self)
 
-        # Bottom button frame
+        # Bottom button frame (여백 최소화)
         button_frame = ctk.CTkFrame(self, height=80)
-        button_frame.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="ew")
+        button_frame.grid(row=2, column=0, padx=0, pady=0, sticky="ew")
         button_frame.grid_propagate(False)
         button_frame.grid_columnconfigure((0, 1, 2), weight=1)
         button_frame.grid_rowconfigure(0, weight=1)
@@ -722,66 +718,90 @@ class MainWindow(ctk.CTk):
         hwp_button.grid(row=0, column=2, padx=10, pady=15, sticky="e")
 
     def create_hierarchical_summary(self, parent_frame):
-        """Create hierarchical summary of all checked items"""
-        # Create scrollable frame for summary
-        summary_frame = ctk.CTkScrollableFrame(parent_frame)
-        summary_frame.grid(row=1, column=0, padx=20, pady=(10, 20), sticky="nsew")
+        """Create modern, readable hierarchical summary of all checked items"""
+        # Create enhanced scrollable frame with modern styling
+        summary_frame = ctk.CTkScrollableFrame(
+            parent_frame,
+            fg_color="#FAFAFA",
+            corner_radius=12,
+            border_width=1,
+            border_color="#E0E0E0"
+        )
+        summary_frame.grid(row=1, column=0, padx=20, pady=(0, 10), sticky="nsew")
         summary_frame.grid_columnconfigure(0, weight=1)
 
+        # Store reference for later use
+        self.summary_scrollable_frame = summary_frame
+
         if not self.state_manager or not self.title1_nodes:
-            no_data_label = ctk.CTkLabel(
+            no_data_frame = ctk.CTkFrame(
                 summary_frame,
-                text="체크된 항목이 없습니다.",
-                font=ctk.CTkFont(size=16)
+                fg_color="white",
+                corner_radius=10,
+                border_width=1,
+                border_color="#E8E8E8"
             )
-            no_data_label.grid(row=0, column=0, pady=20)
+            no_data_frame.grid(row=0, column=0, padx=10, pady=20, sticky="ew")
+            no_data_frame.grid_columnconfigure(0, weight=1)
+            
+            no_data_label = ctk.CTkLabel(
+                no_data_frame,
+                text="📝 체크된 항목이 없습니다.",
+                font=ctk.CTkFont(size=16),
+                text_color="#666666"
+            )
+            no_data_label.grid(row=0, column=0, pady=30)
             return
 
-        # Overall progress
-        total_checked, total_items = self.state_manager.get_overall_progress(self.title1_nodes)
-        progress_label = ctk.CTkLabel(
-            summary_frame,
-            text=f"전체 완료율: {total_checked}/{total_items} ({total_checked/total_items*100:.1f}%)" if total_items > 0 else "전체 완료율: 0%",
-            font=ctk.CTkFont(size=16, weight="bold"),
-            text_color="#28A745" if total_checked == total_items else "#FF6B35"
-        )
-        progress_label.grid(row=0, column=0, pady=(0, 20), sticky="ew")
-
-        # Iterate through title1 -> title2 -> section -> items
-        row_idx = 1
-        for title1 in self.title1_nodes:
-            # Title1 header
-            title1_frame = ctk.CTkFrame(summary_frame, fg_color="transparent")
-            title1_frame.grid(row=row_idx, column=0, padx=5, pady=(10, 5), sticky="ew")
-            title1_frame.grid_columnconfigure(0, weight=1)
+        # Content sections with modern card design (완료 현황 통계 제거)
+        row_idx = 0
+        for title1_idx, title1 in enumerate(self.title1_nodes):
+            # Main section card
+            section_card = ctk.CTkFrame(
+                summary_frame,
+                fg_color="white",
+                corner_radius=12,
+                border_width=1,
+                border_color="#E8E8E8"
+            )
+            section_card.grid(row=row_idx, column=0, padx=10, pady=(0, 15), sticky="ew")
+            section_card.grid_columnconfigure(0, weight=1)
+            
+            # Section header with numbering
+            section_header = ctk.CTkFrame(
+                section_card,
+                fg_color="#F8F9FA",
+                corner_radius=10
+            )
+            section_header.grid(row=0, column=0, padx=12, pady=(12, 8), sticky="ew")
+            section_header.grid_columnconfigure(0, weight=1)
             
             title1_label = ctk.CTkLabel(
-                title1_frame,
-                text=f"📋 {title1.label}",
+                section_header,
+                text=f"{title1_idx + 1}. {title1.label}",
                 font=ctk.CTkFont(size=18, weight="bold"),
-                anchor="w"
+                anchor="w",
+                text_color="#1A1A1A"
             )
-            title1_label.grid(row=0, column=0, sticky="w")
-            row_idx += 1
-
-            # Iterate through title2 nodes
-            for title2 in title1.get_title2_children():
-                # Title2 header
-                title2_frame = ctk.CTkFrame(summary_frame, fg_color="transparent")
-                title2_frame.grid(row=row_idx, column=0, padx=20, pady=(5, 3), sticky="ew")
-                title2_frame.grid_columnconfigure(0, weight=1)
-                
-                title2_label = ctk.CTkLabel(
-                    title2_frame,
-                    text=f"  📂 {title2.label}",
+            title1_label.grid(row=0, column=0, padx=15, pady=12, sticky="w")
+            
+            content_row = 1
+            
+            # Title2 subsections with improved layout
+            for title2_idx, title2 in enumerate(title1.get_title2_children()):
+                # Title2 header with modern styling
+                title2_header = ctk.CTkLabel(
+                    section_card,
+                    text=f"📂 {title2_idx + 1}.{title1_idx + 1} {title2.label}",
                     font=ctk.CTkFont(size=16, weight="bold"),
-                    anchor="w"
+                    anchor="w",
+                    text_color="#333333"
                 )
-                title2_label.grid(row=0, column=0, sticky="w")
-                row_idx += 1
+                title2_header.grid(row=content_row, column=0, padx=25, pady=(8, 4), sticky="w")
+                content_row += 1
 
-                # Iterate through sections
-                has_checked_items = False
+                # Process sections with enhanced display
+                has_content = False
                 for section in title2.get_sections():
                     checked_items = []
                     for item in section.items:
@@ -789,52 +809,93 @@ class MainWindow(ctk.CTk):
                             checked_items.append(item)
                     
                     if checked_items:
-                        has_checked_items = True
-                        # Section header
-                        section_frame = ctk.CTkFrame(summary_frame, fg_color="transparent")
-                        section_frame.grid(row=row_idx, column=0, padx=35, pady=(3, 2), sticky="ew")
-                        section_frame.grid_columnconfigure(0, weight=1)
-                        
-                        section_label = ctk.CTkLabel(
-                            section_frame,
-                            text=f"    📝 {section.label} ({len(checked_items)}/{len(section.items)})",
-                            font=ctk.CTkFont(size=14, weight="bold"),
-                            anchor="w"
+                        has_content = True
+                        # Section container with subtle background
+                        section_container = ctk.CTkFrame(
+                            section_card,
+                            fg_color="#F8F9FA",
+                            corner_radius=8,
+                            border_width=1,
+                            border_color="#E8E8E8"
                         )
-                        section_label.grid(row=0, column=0, sticky="w")
-                        row_idx += 1
+                        section_container.grid(row=content_row, column=0, padx=25, pady=(2, 8), sticky="ew")
+                        section_container.grid_columnconfigure(0, weight=1)
 
-                        # Checked items
-                        for item in checked_items:
-                            item_frame = ctk.CTkFrame(summary_frame, fg_color="transparent")
-                            item_frame.grid(row=row_idx, column=0, padx=50, pady=1, sticky="ew")
-                            item_frame.grid_columnconfigure(0, weight=1)
-                            
+                        # Section title
+                        section_title = ctk.CTkLabel(
+                            section_container,
+                            text=f"📝 {section.label}",
+                            font=ctk.CTkFont(size=14, weight="bold"),
+                            anchor="w",
+                            justify="left",
+                            text_color="#444444",
+                            wraplength=1000
+                        )
+                        section_title.grid(row=0, column=0, padx=15, pady=(10, 6), sticky="ew")
+
+                        # Items with bullet points and left alignment
+                        for idx, item in enumerate(checked_items, 1):
+                            item_container = ctk.CTkFrame(
+                                section_container,
+                                fg_color="transparent"
+                            )
+                            item_container.grid(row=idx, column=0, padx=10, pady=1, sticky="ew")
+                            item_container.grid_columnconfigure(1, weight=1)
+
+                            # Bullet point
+                            bullet_label = ctk.CTkLabel(
+                                item_container,
+                                text="•",
+                                font=ctk.CTkFont(size=13, weight="bold"),
+                                text_color="#007ACC",
+                                width=15
+                            )
+                            bullet_label.grid(row=0, column=0, sticky="nw", pady=(2, 0), padx=(5, 0))
+
+                            # Item text with word wrapping and left alignment
                             item_label = ctk.CTkLabel(
-                                item_frame,
-                                text=f"      ✓ {item}",
-                                font=ctk.CTkFont(size=12),
+                                item_container,
+                                text=item,
+                                font=ctk.CTkFont(size=13),
                                 anchor="w",
+                                justify="left",
                                 text_color="#28A745"
                             )
-                            item_label.grid(row=0, column=0, sticky="w")
-                            row_idx += 1
+                            item_label.grid(row=0, column=1, sticky="ew", padx=(5, 10), pady=2)
 
-                if not has_checked_items:
-                    # Show "no items checked" message
-                    no_items_frame = ctk.CTkFrame(summary_frame, fg_color="transparent")
-                    no_items_frame.grid(row=row_idx, column=0, padx=35, pady=(3, 2), sticky="ew")
-                    no_items_frame.grid_columnconfigure(0, weight=1)
-                    
-                    no_items_label = ctk.CTkLabel(
-                        no_items_frame,
-                        text="    (체크된 항목 없음)",
-                        font=ctk.CTkFont(size=12),
-                        anchor="w",
-                        text_color="#6C757D"
+                            # 위젯이 화면에 배치된 후 실제 너비를 계산하여 wraplength 설정
+                            def update_summary_wraplength(event, label=item_label):
+                                available_width = event.width - 30
+                                if available_width > 50:
+                                    label.configure(wraplength=available_width)
+
+                            item_label.bind("<Configure>", update_summary_wraplength)
+                        
+                        # Bottom padding for section
+                        ctk.CTkLabel(section_container, text="", height=8).grid(row=len(checked_items)+1, column=0)
+                        content_row += 1
+
+                if not has_content:
+                    # Styled "no content" message
+                    no_content_frame = ctk.CTkFrame(
+                        section_card,
+                        fg_color="#F5F5F5",
+                        corner_radius=6
                     )
-                    no_items_label.grid(row=0, column=0, sticky="w")
-                    row_idx += 1
+                    no_content_frame.grid(row=content_row, column=0, padx=35, pady=(2, 8), sticky="ew")
+                    
+                    no_content_label = ctk.CTkLabel(
+                        no_content_frame,
+                        text="체크된 항목이 없습니다",
+                        font=ctk.CTkFont(size=13),
+                        text_color="#999999"
+                    )
+                    no_content_label.grid(row=0, column=0, pady=8)
+                    content_row += 1
+            
+            # Card bottom padding
+            ctk.CTkLabel(section_card, text="", height=8).grid(row=content_row, column=0)
+            row_idx += 1
 
     def return_to_checklist(self):
         """Return to main checklist screen"""
